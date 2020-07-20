@@ -6,6 +6,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Menu;
 
+import com.example.notekeeper.DataClasses.CourseInfo;
 import com.example.notekeeper.DataClasses.DataManager;
 import com.example.notekeeper.DataClasses.NoteInfo;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -21,6 +22,7 @@ import androidx.navigation.ui.NavigationUI;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -30,6 +32,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private AppBarConfiguration mAppBarConfiguration;
     private NoteRecylerAdapter mNoteRecylerAdapter;
+    private RecyclerView mRecyclerItems;
+    private LinearLayoutManager mNotesLinearLayoutManager;
+    private NavigationView mNavigationView;
+    private CourseRecylerAdapter mCourseRecylerAdapter;
+    private GridLayoutManager mCourseLayoutManager;
 
 
     @Override
@@ -48,7 +55,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
         });
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
-        NavigationView navigationView = findViewById(R.id.nav_view);
+        mNavigationView = findViewById(R.id.nav_view);
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         mAppBarConfiguration = new AppBarConfiguration.Builder(
@@ -57,7 +64,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 .build();
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment);
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
-        NavigationUI.setupWithNavController(navigationView, navController);
+        NavigationUI.setupWithNavController(mNavigationView, navController);
+        mNavigationView.setNavigationItemSelectedListener(this);
+
 
         initialiseDisplayContent();
     }
@@ -70,22 +79,53 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void initialiseDisplayContent() {
-        final RecyclerView recyclerView = (RecyclerView) findViewById(R.id.list_items);
-        LinearLayoutManager notesLinearLayoutManager = new LinearLayoutManager(this);
-        recyclerView.setLayoutManager(notesLinearLayoutManager);
-
+        mRecyclerItems = (RecyclerView) findViewById(R.id.list_items);
+        mNotesLinearLayoutManager = new LinearLayoutManager(this);
+        mCourseLayoutManager = new GridLayoutManager(this,getResources().getInteger(R.integer.course_grid_span));
         List<NoteInfo> notes = DataManager.getInstance().getNotes();
         mNoteRecylerAdapter = new NoteRecylerAdapter(this,notes);
-        recyclerView.setAdapter(mNoteRecylerAdapter);
+
+        List<CourseInfo> courses = DataManager.getInstance().getCourses();
+        mCourseRecylerAdapter = new CourseRecylerAdapter(this,courses);
+
+
+
+        displayNotes();
 
     }
 
+    private void displayNotes() {
+        mRecyclerItems.setAdapter(mNoteRecylerAdapter);
+        mRecyclerItems.setLayoutManager(mNotesLinearLayoutManager);
+        selectNavigationMenuitem(R.id.nav_notes);
+    }
+
+    private void selectNavigationMenuitem(int id) {
+        Menu menu = mNavigationView.getMenu();
+        menu.findItem(id).setChecked(true);
+    }
+
+    private void displayCourses(){
+        mRecyclerItems.setAdapter(mCourseRecylerAdapter);
+        mRecyclerItems.setLayoutManager(mCourseLayoutManager);
+        selectNavigationMenuitem(R.id.nav_courses);
+
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.action_settings){
+            startActivity(new Intent(this,SettingsActivity.class));
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -97,12 +137,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+
         int id = item.getItemId();
 
-        if (id == R.id.nav_courses){
-            handleNoteSelection("Courses");
-        }else if (id == R.id.nav_notes){
-            handleNoteSelection("Notes");
+        if (id == R.id.nav_notes){
+            displayNotes();
+        }else if (id == R.id.nav_courses){
+            displayCourses();
         }
 
         DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
